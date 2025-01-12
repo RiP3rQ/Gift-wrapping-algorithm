@@ -18,11 +18,13 @@ import { z } from 'zod'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Textarea } from "@/components/ui/textarea"
 
+// Schemat formularza do wprowadzania niestandardowych punktów
 const formSchema = z.object({
   points: customPointsSchema
 })
 
 export default function GiftWrappingVisualization() {
+  // Deklaracja referencji i stanów
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [points, setPoints] = useState<Point[]>([])
   const [steps, setSteps] = useState<Step[]>([])
@@ -35,11 +37,13 @@ export default function GiftWrappingVisualization() {
   const [convexHullVertices, setConvexHullVertices] = useState<Point[]>([])
   const [hoveredElement, setHoveredElement] = useState<{ type: 'point' | 'line', data: Point | [Point, Point] } | null>(null)
 
+  // Stałe do rysowania na canvasie
   const width = 800
   const height = 600
   const margin = 50
   const scale = (width - 2 * margin) / 100
 
+  // Inicjalizacja formularza
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -47,10 +51,12 @@ export default function GiftWrappingVisualization() {
     },
   })
 
+  // Efekt do inicjalizacji punktów
   useEffect(() => {
     resetPoints()
   }, [])
 
+  // Efekt do animacji algorytmu
   useEffect(() => {
     if (isAnimating && !isComplete) {
       if (currentTriedIndex < steps[currentStep]?.triedPoints.length - 1) {
@@ -72,6 +78,7 @@ export default function GiftWrappingVisualization() {
     }
   }, [isAnimating, currentStep, currentTriedIndex, steps, isComplete])
 
+  // Efekt do rysowania na canvasie
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -81,7 +88,7 @@ export default function GiftWrappingVisualization() {
 
     ctx.clearRect(0, 0, width, height)
 
-    // Draw axes
+    // Rysowanie osi
     ctx.strokeStyle = 'black'
     ctx.lineWidth = 1
     ctx.beginPath()
@@ -91,7 +98,7 @@ export default function GiftWrappingVisualization() {
     ctx.lineTo(width / 2, height - margin)
     ctx.stroke()
 
-    // Draw axis labels
+    // Rysowanie etykiet osi
     ctx.fillStyle = 'black'
     ctx.font = '12px Arial'
     ctx.textAlign = 'center'
@@ -100,7 +107,7 @@ export default function GiftWrappingVisualization() {
     ctx.fillText('-50', width / 2 - 15, height - margin + 15)
     ctx.fillText('50', width / 2 - 15, margin - 5)
 
-    // Draw points
+    // Rysowanie punktów
     ctx.fillStyle = 'blue'
     points.forEach((point) => {
       const x = width / 2 + point.x * scale
@@ -110,7 +117,7 @@ export default function GiftWrappingVisualization() {
       ctx.fill()
     })
 
-    // Draw hull (green lines)
+    // Rysowanie otoczki (zielone linie)
     ctx.strokeStyle = 'green'
     ctx.lineWidth = 2
     ctx.beginPath()
@@ -128,7 +135,7 @@ export default function GiftWrappingVisualization() {
     }
     ctx.stroke()
 
-    // Draw current tried line (red)
+    // Rysowanie aktualnie sprawdzanej linii (czerwona)
     if (!isComplete && currentStep < steps.length && currentTriedIndex >= 0) {
       const currentPoint = steps[currentStep].currentPoint
       const triedPoint = steps[currentStep].triedPoints[currentTriedIndex]
@@ -139,7 +146,7 @@ export default function GiftWrappingVisualization() {
       ctx.stroke()
     }
 
-    // Draw tooltip
+    // Rysowanie dymka z informacją
     if (hoveredElement) {
       ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
       ctx.font = '14px Arial'
@@ -156,7 +163,7 @@ export default function GiftWrappingVisualization() {
         tooltipY = height / 2 - point.y * scale - 10
       } else {
         const [start, end] = hoveredElement.data as [Point, Point]
-        tooltipText = `(${start.x}, ${start.y}) to (${end.x}, ${end.y})`
+        tooltipText = `(${start.x}, ${start.y}) do (${end.x}, ${end.y})`
         tooltipX = (width / 2 + start.x * scale + width / 2 + end.x * scale) / 2
         tooltipY = (height / 2 - start.y * scale + height / 2 - end.y * scale) / 2 - 10
       }
@@ -167,6 +174,7 @@ export default function GiftWrappingVisualization() {
     }
   }, [points, steps, currentStep, currentTriedIndex, isComplete, hoveredElement])
 
+  // Funkcja do resetowania punktów
   const resetPoints = (newPoints?: Point[]) => {
     const pointsToUse = newPoints || generateRandomPoints(10, -50, 50)
     setPoints(pointsToUse)
@@ -180,6 +188,7 @@ export default function GiftWrappingVisualization() {
     setConvexHullShape("")
   }
 
+  // Funkcja do rozpoczęcia animacji
   const startAnimation = () => {
     setIsAnimating(true)
     setCurrentStep(0)
@@ -187,12 +196,14 @@ export default function GiftWrappingVisualization() {
     setIsComplete(false)
   }
 
+  // Funkcja do generowania losowych punktów
   const handleRandomGenerate = () => {
-    const count = Math.floor(Math.random() * 19) + 2 // 2 to 20 points
+    const count = Math.floor(Math.random() * 19) + 1 // 1 do 20 punktów
     const newPoints = generateRandomPoints(count, -50, 50)
     form.setValue('points', newPoints.map(p => `${p.x},${p.y}`).join('\n'))
   }
 
+  // Funkcja obsługująca przesłanie formularza
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     const newPoints = values.points.split('\n').map(line => {
       const [x, y] = line.split(',').map(num => parseInt(num.trim()))
@@ -202,6 +213,7 @@ export default function GiftWrappingVisualization() {
     setIsModalOpen(false)
   }
 
+  // Funkcja obsługująca ruch myszy nad canvasem
   const handleCanvasMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -213,7 +225,7 @@ export default function GiftWrappingVisualization() {
     const canvasX = (x - width / 2) / scale
     const canvasY = -(y - height / 2) / scale
 
-    // Check if mouse is over a point
+    // Sprawdzanie, czy mysz jest nad punktem
     for (const point of points) {
       if (Math.abs(point.x - canvasX) < 2 && Math.abs(point.y - canvasY) < 2) {
         setHoveredElement({ type: 'point', data: point })
@@ -221,7 +233,7 @@ export default function GiftWrappingVisualization() {
       }
     }
 
-    // Check if mouse is over a line
+    // Sprawdzanie, czy mysz jest nad linią
     for (let i = 0; i < steps.length; i++) {
       const start = steps[i].currentPoint
       const end = steps[(i + 1) % steps.length].currentPoint
@@ -235,6 +247,7 @@ export default function GiftWrappingVisualization() {
     setHoveredElement(null)
   }
 
+  // Funkcja do obliczania odległości punktu od linii
   const distanceToLine = (x: number, y: number, x1: number, y1: number, x2: number, y2: number) => {
     const A = x - x1
     const B = y - y1
@@ -265,7 +278,7 @@ export default function GiftWrappingVisualization() {
 
   return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
-        <h1 className="text-3xl font-bold mb-4">Gift Wrapping Algorithm Visualization</h1>
+        <h1 className="text-3xl font-bold mb-4">Wizualizacja algorytmu Gift Wrapping</h1>
         <canvas
             ref={canvasRef}
             width={width}
@@ -276,20 +289,20 @@ export default function GiftWrappingVisualization() {
         />
         <div className="space-x-4 mb-4">
           <Button onClick={startAnimation} disabled={isAnimating}>
-            Start Animation
+            Rozpocznij animację
           </Button>
           <Button onClick={() => resetPoints()} variant="outline">
-            Reset Points
+            Resetuj punkty
           </Button>
           <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline">Custom Points</Button>
+              <Button variant="outline">Niestandardowe punkty</Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
-                <DialogTitle>Enter Custom Points</DialogTitle>
+                <DialogTitle>Wprowadź niestandardowe punkty</DialogTitle>
                 <DialogDescription>
-                  Enter points in the format "x,y" (one per line). Values should be between -50 and 50.
+                  Wprowadź punkty w formacie "x,y" (jeden na linię). Wartości powinny być między -50 a 50.
                 </DialogDescription>
               </DialogHeader>
               <Form {...form}>
@@ -299,7 +312,7 @@ export default function GiftWrappingVisualization() {
                       name="points"
                       render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Points</FormLabel>
+                            <FormLabel>Punkty</FormLabel>
                             <FormControl>
                               <Textarea
                                   placeholder="0,0
@@ -315,9 +328,9 @@ export default function GiftWrappingVisualization() {
                   />
                   <DialogFooter>
                     <Button type="button" variant="outline" onClick={handleRandomGenerate}>
-                      Random Generate
+                      Generuj losowo
                     </Button>
-                    <Button type="submit">Submit</Button>
+                    <Button type="submit">Zatwierdź</Button>
                   </DialogFooter>
                 </form>
               </Form>
@@ -326,10 +339,10 @@ export default function GiftWrappingVisualization() {
         </div>
         {isComplete && (
             <div className="text-left w-full max-w-md">
-              <h2 className="text-xl font-bold mb-2">Results:</h2>
-              <p>Shape: {convexHullShape}</p>
-              <p>Number of lines: {convexHullVertices.length}</p>
-              <p>Vertices:</p>
+              <h2 className="text-xl font-bold mb-2">Wyniki:</h2>
+              <p>Kształt: {convexHullShape}</p>
+              <p>Liczba linii: {convexHullVertices.length}</p>
+              <p>Wierzchołki:</p>
               <ul className="list-disc pl-5">
                 {convexHullVertices.map((vertex, index) => (
                     <li key={index}>({vertex.x}, {vertex.y})</li>
