@@ -78,7 +78,6 @@ export default function GiftWrappingVisualization() {
     }
   }, [isAnimating, currentStep, currentTriedIndex, steps, isComplete])
 
-  // Efekt do rysowania na canvasie
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -110,8 +109,8 @@ export default function GiftWrappingVisualization() {
     // Rysowanie punktów
     ctx.fillStyle = 'blue'
     points.forEach((point) => {
-      const x = width / 2 + point.x * scale
-      const y = height / 2 - point.y * scale
+      const x = width / 2 + (point.x / 100) * (width - 2 * margin)
+      const y = height / 2 - (point.y / 100) * (height - 2 * margin)
       ctx.beginPath()
       ctx.arc(x, y, 4, 0, 2 * Math.PI)
       ctx.fill()
@@ -122,8 +121,8 @@ export default function GiftWrappingVisualization() {
     ctx.lineWidth = 2
     ctx.beginPath()
     steps.slice(0, currentStep + 1).forEach((step, index) => {
-      const x = width / 2 + step.currentPoint.x * scale
-      const y = height / 2 - step.currentPoint.y * scale
+      const x = width / 2 + (step.currentPoint.x / 100) * (width - 2 * margin)
+      const y = height / 2 - (step.currentPoint.y / 100) * (height - 2 * margin)
       if (index === 0) {
         ctx.moveTo(x, y)
       } else {
@@ -141,8 +140,8 @@ export default function GiftWrappingVisualization() {
       const triedPoint = steps[currentStep].triedPoints[currentTriedIndex]
       ctx.strokeStyle = 'red'
       ctx.beginPath()
-      ctx.moveTo(width / 2 + currentPoint.x * scale, height / 2 - currentPoint.y * scale)
-      ctx.lineTo(width / 2 + triedPoint.x * scale, height / 2 - triedPoint.y * scale)
+      ctx.moveTo(width / 2 + (currentPoint.x / 100) * (width - 2 * margin), height / 2 - (currentPoint.y / 100) * (height - 2 * margin))
+      ctx.lineTo(width / 2 + (triedPoint.x / 100) * (width - 2 * margin), height / 2 - (triedPoint.y / 100) * (height - 2 * margin))
       ctx.stroke()
     }
 
@@ -159,13 +158,13 @@ export default function GiftWrappingVisualization() {
       if (hoveredElement.type === 'point') {
         const point = hoveredElement.data as Point
         tooltipText = `(${point.x}, ${point.y})`
-        tooltipX = width / 2 + point.x * scale + 10
-        tooltipY = height / 2 - point.y * scale - 10
+        tooltipX = width / 2 + (point.x / 100) * (width - 2 * margin) + 10
+        tooltipY = height / 2 - (point.y / 100) * (height - 2 * margin) - 10
       } else {
         const [start, end] = hoveredElement.data as [Point, Point]
         tooltipText = `(${start.x}, ${start.y}) do (${end.x}, ${end.y})`
-        tooltipX = (width / 2 + start.x * scale + width / 2 + end.x * scale) / 2
-        tooltipY = (height / 2 - start.y * scale + height / 2 - end.y * scale) / 2 - 10
+        tooltipX = (width / 2 + (start.x / 100) * (width - 2 * margin) + width / 2 + (end.x / 100) * (width - 2 * margin)) / 2
+        tooltipY = (height / 2 - (start.y / 100) * (height - 2 * margin) + height / 2 - (end.y / 100) * (height - 2 * margin)) / 2 - 10
       }
 
       ctx.fillRect(tooltipX, tooltipY - 20, ctx.measureText(tooltipText).width + 10, 25)
@@ -278,7 +277,7 @@ export default function GiftWrappingVisualization() {
 
   return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
-        <h1 className="text-3xl font-bold mb-4">Wizualizacja algorytmu Gift Wrapping</h1>
+        <h1 className="text-3xl font-bold mb-4">Wizualizacja algorytmu Gift Wrapping(Jarvisa)</h1>
         <canvas
             ref={canvasRef}
             width={width}
@@ -302,7 +301,7 @@ export default function GiftWrappingVisualization() {
               <DialogHeader>
                 <DialogTitle>Wprowadź niestandardowe punkty</DialogTitle>
                 <DialogDescription>
-                  Wprowadź punkty w formacie "x,y" (jeden na linię). Wartości powinny być między -50 a 50.
+                  Wprowadź punkty w formacie &#34;x,y&#34; (jeden na linię). Wartości powinny być między -50 a 50.
                 </DialogDescription>
               </DialogHeader>
               <Form {...form}>
@@ -316,8 +315,8 @@ export default function GiftWrappingVisualization() {
                             <FormControl>
                               <Textarea
                                   placeholder="0,0
-10,10
--20,30"
+                                  10,10
+                                  -20,30"
                                   className="h-[200px]"
                                   {...field}
                               />
@@ -350,6 +349,12 @@ export default function GiftWrappingVisualization() {
               </ul>
             </div>
         )}
+        <footer className="mt-8 text-center text-gray-500 text-sm">
+            <p>
+                Zaimplementowane przez: {' '}
+                Rafał Pompa & Krystian Snarski & Dawid Przybilla @2025
+            </p>
+        </footer>
       </div>
   )
 }
