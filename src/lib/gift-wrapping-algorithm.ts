@@ -21,7 +21,7 @@ function orientation(p: Point, q: Point, r: Point): number {
 
 // Implementacja algorytmu Gift Wrapping (Jarvis March)
 export function giftWrapping(points: Point[]): Step[] {
-    if (points.length < 3) return [];
+    if (points.length < 1) return [];
 
     const steps: Step[] = [];
     let leftmost = 0;
