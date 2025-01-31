@@ -100,6 +100,7 @@ export default function GiftWrappingVisualization() {
    */
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    mode: "onChange",
     defaultValues: {
       points: "",
     },
@@ -476,7 +477,7 @@ export default function GiftWrappingVisualization() {
               <DialogTitle>Wprowadź niestandardowe punkty</DialogTitle>
               <DialogDescription>
                 Wprowadź punkty w formacie &#34;x,y&#34; (jeden na linię).
-                Wartości powinny być między -50 a 50.
+                Wartości powinny być między -50 a 50 (tylko liczby całkowite).
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
