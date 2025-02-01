@@ -1,16 +1,4 @@
-import { z } from "zod";
-
-// Definicja typów dla punktu i kroku algorytmu
-export interface Point {
-  x: number;
-  y: number;
-}
-
-export interface Step {
-  currentPoint: Point;
-  triedPoints: Point[];
-  nextHullPoint: Point;
-}
+import { Point, Step } from "@/types/geometry";
 
 /**
  * Sprawdza orientację trzech punktów względem siebie.
@@ -24,8 +12,17 @@ export interface Step {
  */
 function orientation(p: Point, q: Point, r: Point): number {
   const val = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
-  if (val === 0) return 0;
-  return val > 0 ? 1 : 2;
+  if (val === 0) return 0; // współliniowe
+  return val > 0 ? 1 : 2; // skręt w prawo lub lewo
+}
+
+/**
+ * Oblicza odległość między dwoma punktami.
+ * @param p1 - Punkt początkowy
+ * @param p2 - Punkt końcowy
+ */
+function distanceBetweenPoints(p1: Point, p2: Point): number {
+  return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
 }
 
 /**
@@ -61,6 +58,7 @@ export function giftWrapping(points: Point[]): Step[] {
     const currentStep: Step = {
       currentPoint: points[p], // Aktualny punkt otoczki
       triedPoints: [], // Lista punktów sprawdzonych w tym kroku
+      collinearPoints: [], // Lista punktów współliniowych z aktualnym
       nextHullPoint: points[p], // Następny punkt otoczki (początkowo ustawiony na aktualny)
     };
 
@@ -69,15 +67,32 @@ export function giftWrapping(points: Point[]): Step[] {
 
     // Sprawdź każdy punkt jako potencjalny następny punkt otoczki
     for (let i = 0; i < points.length; i++) {
+      // Pomijamy aktualny punkt
       if (i !== p) {
-        // Pomijamy aktualny punkt
         // Dodaj punkt do listy sprawdzonych w tym kroku
         currentStep.triedPoints.push(points[i]);
 
+        // Sprawdź orientację punktów
+        const orient = orientation(points[p], points[i], points[q]);
+
         // Jeśli znaleziono punkt bardziej "na lewo" (orientation === 2),
         // to staje się on nowym kandydatem na następny punkt otoczki
-        if (orientation(points[p], points[i], points[q]) === 2) {
+        if (orient === 2) {
           q = i;
+          currentStep.collinearPoints = []; // Wyczyść listę punktów współliniowych
+          // Jeśli punkty są współliniowe, to wybierz punkt najbardziej oddalony od aktualnego punktu
+        } else if (orient === 0) {
+          // Sprawdź, czy aktualny kandydat jest dalej od aktualnego punktu niż poprzedni
+          const distCurrent = distanceBetweenPoints(points[p], points[q]);
+          // Oblicz odległość do nowego punktu
+          const distNew = distanceBetweenPoints(points[p], points[i]);
+          // Jeśli nowy punkt jest dalej, to zastąp kandydata
+          if (distNew > distCurrent) {
+            currentStep.collinearPoints.push(points[q]); // Add the previous candidate to collinear points
+            q = i; // Update the candidate to the farthest collinear point
+          } else {
+            currentStep.collinearPoints.push(points[i]); // Add the current point to collinear points
+          }
         }
       }
     }
@@ -107,7 +122,7 @@ export function giftWrapping(points: Point[]): Step[] {
 export function generateRandomPoints(
   count: number,
   min: number,
-  max: number
+  max: number,
 ): Point[] {
   return Array.from({ length: count }, () => ({
     x: Math.floor(Math.random() * (max - min + 1)) + min,
@@ -137,56 +152,3 @@ export function getConvexHullShape(points: Point[]): string {
   if (lineCount === 10) return "dziesięciokąt";
   return `wielokąt o ${lineCount} bokach`;
 }
-
-/**
- * Schema walidacji Zod dla pojedynczego punktu.
- * Sprawdza czy:
- * - współrzędne x i y są liczbami całkowitymi
- * - wartości mieszczą się w przedziale [-50, 50]
- */
-export const pointSchema = z.object({
-  x: z.number().int().gte(-50).lte(50),
-  y: z.number().int().gte(-50).lte(50),
-});
-
-/**
- * Schema walidacji dla tablicy punktów.
- * Wymaga:
- * - minimum 1 punkt
- * - maksymalnie 20 punktów
- * - każdy punkt musi spełniać warunki pointSchema
- */
-export const pointsInputSchema = z.array(pointSchema).min(1).max(20);
-
-/**
- * Schema walidacji dla wprowadzania punktów w formacie tekstowym.
- * Akceptuje tekst w formacie:
- * - każdy punkt w nowej linii
- * - format punktu: "x,y" lub "x, y"
- * - wartości x,y muszą być liczbami całkowitymi
- * - dozwolone od 1 do 20 punktów
- */
-export const customPointsSchema = z.string().refine(
-    (val) => {
-      const lines = val.trim().split("\n").map(line => line.trim());
-      if (lines.length < 1 || lines.length > 20) return false;
-
-      return lines.every((line) => {
-        const match = line.match(/^(-?\d+),\s*(-?\d+)$/);
-        if (!match) return false;
-
-        const x = Number(match[1]);
-        const y = Number(match[2]);
-
-        return (
-            Number.isInteger(x) && Number.isInteger(y) &&
-            x >= -50 && x <= 50 &&
-            y >= -50 && y <= 50
-        );
-      });
-    },
-    {
-      message:
-          "Nieprawidłowe dane wejściowe. Wprowadź od 1 do 20 punktów w formacie 'x,y' (jeden na linię), z wartościami od -50 do 50 (tylko liczby całkowite).",
-    }
-);
