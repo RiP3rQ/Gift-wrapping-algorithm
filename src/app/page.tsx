@@ -19,6 +19,14 @@ import { GiftWrappingResults } from "@/components/gift-wrapping-results";
 import { formSchema } from "@/schema/custom-points-schema";
 import { ActionButtons } from "@/components/action-buttons";
 import { Point, Step } from "@/types/geometry";
+import {
+  drawAxis,
+  drawAxisLabels,
+  drawConvexHull,
+  drawCurrentLine,
+  drawPoints,
+} from "@/lib/canvas-functions";
+import { CANVAS_HEIGTH, CANVAS_WIDTH } from "@/constants";
 
 /**
  * Główny komponent aplikacji odpowiedzialny za wizualizację algorytmu Gift Wrapping
@@ -51,16 +59,6 @@ export default function GiftWrappingVisualization() {
   const [convexHullShape, setConvexHullShape] = useState("");
   const [convexHullVertices, setConvexHullVertices] = useState<Point[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  /**
-   * Stałe określające wymiary i skalę obszaru rysowania:
-   * - width, height: wymiary canvasa w pikselach
-   * - margin: margines od krawędzi
-   * - scale: współczynnik skalowania między współrzędnymi matematycznymi a pikselami
-   */
-  const width = 800;
-  const height = 600;
-  const margin = 50;
 
   /**
    * Effect Hook uruchamiany przy pierwszym renderowaniu
@@ -109,72 +107,18 @@ export default function GiftWrappingVisualization() {
     if (!ctx) return;
 
     // Czyszczenie canvasa
-    ctx.clearRect(0, 0, width, height);
+    ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGTH);
 
     // Rysowanie osi współrzędnych
-    ctx.strokeStyle = "black";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(margin, height / 2);
-    ctx.lineTo(width - margin, height / 2);
-    ctx.moveTo(width / 2, margin);
-    ctx.lineTo(width / 2, height - margin);
-    ctx.stroke();
-
+    drawAxis(ctx);
     // Rysowanie etykiet osi
-    ctx.fillStyle = "black";
-    ctx.font = "12px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText("-50", margin, height / 2 + 15);
-    ctx.fillText("50", width - margin, height / 2 + 15);
-    ctx.fillText("-50", width / 2 - 15, height - margin + 15);
-    ctx.fillText("50", width / 2 - 15, margin - 5);
-
+    drawAxisLabels(ctx);
     // Rysowanie wszystkich punktów
-    ctx.fillStyle = "blue";
-    points.forEach((point) => {
-      const x = width / 2 + (point.x / 100) * (width - 2 * margin);
-      const y = height / 2 - (point.y / 100) * (height - 2 * margin);
-      ctx.beginPath();
-      ctx.arc(x, y, 4, 0, 2 * Math.PI);
-      ctx.fill();
-    });
-
+    drawPoints(ctx, points);
     // Rysowanie aktualnej otoczki (zielone linie)
-    ctx.strokeStyle = "green";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    steps.slice(0, currentStep + 1).forEach((step, index) => {
-      const x = width / 2 + (step.currentPoint.x / 100) * (width - 2 * margin);
-      const y =
-        height / 2 - (step.currentPoint.y / 100) * (height - 2 * margin);
-      if (index === 0) {
-        ctx.moveTo(x, y);
-      } else {
-        ctx.lineTo(x, y);
-      }
-    });
-    if (isComplete) {
-      ctx.closePath();
-    }
-    ctx.stroke();
-
+    drawConvexHull(ctx, steps, currentStep, isComplete);
     // Rysowanie aktualnie sprawdzanej linii (czerwone linie)
-    if (!isComplete && currentStep < steps.length && currentTriedIndex >= 0) {
-      const currentPoint = steps[currentStep].currentPoint;
-      const triedPoint = steps[currentStep].triedPoints[currentTriedIndex];
-      ctx.strokeStyle = "red";
-      ctx.beginPath();
-      ctx.moveTo(
-        width / 2 + (currentPoint.x / 100) * (width - 2 * margin),
-        height / 2 - (currentPoint.y / 100) * (height - 2 * margin),
-      );
-      ctx.lineTo(
-        width / 2 + (triedPoint.x / 100) * (width - 2 * margin),
-        height / 2 - (triedPoint.y / 100) * (height - 2 * margin),
-      );
-      ctx.stroke();
-    }
+    drawCurrentLine(ctx, steps, currentStep, currentTriedIndex, isComplete);
   }, [points, steps, currentStep, currentTriedIndex, isComplete]);
 
   // Funkcja do resetowania punktów
@@ -224,8 +168,8 @@ export default function GiftWrappingVisualization() {
       <PageHeader />
       <canvas
         ref={canvasRef}
-        width={width}
-        height={height}
+        width={CANVAS_WIDTH}
+        height={CANVAS_HEIGTH}
         className="border border-gray-300 bg-white mb-4"
       />
       <ActionButtons
