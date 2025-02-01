@@ -18,7 +18,6 @@ A simple interactive web application that visualizes the gift wrapping algorithm
 
 - **Interactive Visualization**: Watch the algorithm work in real-time with step-by-step animation
 - **Custom Input**: Enter your own set of points or generate random ones
-- **Educational Tooltips**: Hover over points and lines to see detailed information
 - **Canvas Drawing**: High-performance canvas-based rendering
 - **Point Validation**: Input validation ensures points are within valid range (-50 to 50)
 
